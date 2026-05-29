@@ -178,6 +178,44 @@
   .avail-low { background:#FEF5E6; color:#8A5A1A; }
   .avail-out { background:#FAEBEB; color:#8A2A2A; }
 
+  .search-wrap {
+    max-width:640px;
+    margin:1.25rem auto 0;
+    padding:0 1rem;
+    position:relative; z-index:1;
+  }
+  .search-input {
+    width:100%;
+    padding:10px 16px 10px 40px;
+    border:1px solid var(--border);
+    border-radius:99px;
+    background:var(--card-bg);
+    font-family:'DM Sans',sans-serif;
+    font-size:0.9rem;
+    color:var(--dark);
+    outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    backdrop-filter:blur(4px);
+  }
+  .search-input:focus {
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(196,151,58,0.12);
+  }
+  .search-input::placeholder { color:var(--muted); }
+  .search-icon {
+    position:absolute; left:28px; top:50%;
+    transform:translateY(-50%);
+    color:var(--muted); font-size:15px;
+    pointer-events:none;
+  }
+  .search-clear {
+    position:absolute; right:28px; top:50%;
+    transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:var(--muted); font-size:16px;
+    display:none; line-height:1;
+  }
+
   .empty-state {
     text-align:center; padding:4rem 2rem; color:var(--muted);
     font-family:'Playfair Display',serif; font-style:italic; font-size:1.1rem;
@@ -231,6 +269,12 @@
     <button class="filter-btn" onclick="filterBy('sweet',this)">Сладкий</button>
   </div>
 
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="search-input" placeholder="Поиск напитка..." oninput="onSearch(this.value)">
+    <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+  </div>
+
   <main>
     <div id="last-updated" class="last-updated"></div>
     <div id="drink-list">
@@ -247,6 +291,7 @@ const sweetLabels = { dry:'Сухой', semidry:'Полусухой', semisweet:
 const sweetClass  = { dry:'sweet-dry', semidry:'sweet-semidry', semisweet:'sweet-semisweet', sweet:'sweet-sweet' };
 let allDrinks = [];
 let currentFilter = 'all';
+let searchQuery = '';
 
 const fill   = document.getElementById('loader-fill');
 const pct    = document.getElementById('loader-pct');
@@ -301,11 +346,30 @@ function filterBy(type, btn) {
   render();
 }
 
+function onSearch(val) {
+  searchQuery = val.trim().toLowerCase();
+  document.getElementById('search-clear').style.display = val ? 'block' : 'none';
+  render();
+}
+
+function clearSearch() {
+  searchQuery = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  render();
+}
+
 function render() {
   const list = document.getElementById('drink-list');
   let filtered = allDrinks;
   if (currentFilter === 'nonalc') filtered = allDrinks.filter(d => d.abv === '0' || d.abv === '');
   else if (currentFilter !== 'all') filtered = allDrinks.filter(d => d.sweet === currentFilter);
+  if (searchQuery) filtered = filtered.filter(d =>
+    d.name?.toLowerCase().includes(searchQuery) ||
+    d.desc?.toLowerCase().includes(searchQuery) ||
+    d.producer?.toLowerCase().includes(searchQuery) ||
+    d.country?.toLowerCase().includes(searchQuery)
+  );
 
   const inStock  = filtered.filter(d => d.qty > 0).sort((a,b) => a.name.localeCompare(b.name));
   const outStock = filtered.filter(d => d.qty <= 0).sort((a,b) => a.name.localeCompare(b.name));
